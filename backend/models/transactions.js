@@ -37,7 +37,6 @@ const transactionSchema = new mongoose.Schema(
 
     description: {
       type: String,
-      require: false,
       default: "",
       required:false
     },
