@@ -1,61 +1,107 @@
 import mongoose from "mongoose";
 
-const goalSchema = new mongoose.Schema({
-  userId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: "User", 
-    required: true, 
-    index: true 
-  },
-  title: { 
-    type: String, 
-    required: true 
-  },
-  category: {  // Added to align sections (Loans/Rent, Investments)
-    type: String,
-    enum: ["savings", "debt", "investment", "rent", "other"],
-    required: true
-  },
-  targetAmount: { 
-    type: Number, 
-    required: true 
-  },
-  savedAmount: { 
-    type: Number, 
-    default: 0 
-  },
-  monthlyContribution: {  // Added for EMI/investment tracking  
-    type: Number,
-    default: 0
-  },
-  deadline: { 
-    type: Date, 
-    required: true 
-  },
-  source: {  // (e.g., loan/investment)
+// Expense Schema for Monthly Expenses
+const expenseSchema = new mongoose.Schema({
+  userId: {
     type: mongoose.Schema.Types.ObjectId,
-    refPath: "sourceModel",  // Dynamic ref (e.g., "Loan" or "Investment")
+    ref: "User",
+    required: true,
+    index: true
+  },
+  category: {
+    type: String,
+    required: true, // e.g., "Rent", "Food", "Transport", etc.  
+    trim: true
+  },
+  amount: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  proofUpload: {
+    type: String, // URL/path to uploaded file (e.g., image/PDF for OCR processing)
     default: null
   },
-  sourceModel: {  // e.g., "Loan", "Investment", "Expense"
-    type: String,
-    default: null
-  },
-  status: {
-    type: String,
-    enum: ["in-progress", "completed", "failed"],
-    default: "in-progress"
+  isMonthly: {
+    type: Boolean,
+    default: true
   }
 }, { timestamps: true });
 
-// Optional: Pre-save hook to auto-update status (e.g., if savedAmount >= targetAmount)
-goalSchema.pre("save", function (next) {
-  if (this.savedAmount >= this.targetAmount) {
-    this.status = "completed";
-  } else if (this.deadline < new Date() && this.savedAmount < this.targetAmount) {
-    this.status = "failed";
-  }
-  next();
-});
+export const Expense = mongoose.model("Expense", expenseSchema);
 
-export const Goal = mongoose.model("Goal", goalSchema);
+// Loan Schema for Loans & Rent 
+const loanSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+    index: true
+  },
+  type: {
+    type: String,
+    required: true,
+    enum: ["Home Loan", "Personal Loan", "Car Loan", "Rent", "Other"]
+  },
+  principalAmount: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  institutionName: {
+    type: String,
+    required: true, // "From/Institution name"  
+    trim: true
+  },
+  monthlyEMI: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  proofUpload: {
+    type: String, // URL/path to uploaded file (e.g., image/PDF for OCR processing)
+    default: null
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  }
+}, { timestamps: true });
+
+export const Loan = mongoose.model("Loan", loanSchema);
+
+// Investment Schema for Investments
+const investmentSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+    index: true
+  },
+  type: {
+    type: String,
+    required: true,
+    enum: ["SIP", "Stock", "Mutual Fund", "Other"]
+  },
+  name: {
+    type: String,
+    required: true, // "Investment name" as per UI
+    trim: true
+  },
+  amount: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  proofUpload: {
+    type: String, // URL/path to uploaded file (e.g., image/PDF for OCR processing)
+    default: null
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  }
+}, { timestamps: true });
+
+export const Investment = mongoose.model("Investment", investmentSchema);
+
