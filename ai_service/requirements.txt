@@ -1,0 +1,15 @@
+agno
+openai
+groq
+python-dotenv
+duckduckgo-search
+ddgs
+pypdf
+lancedb
+streamlit
+pandas
+tantivy
+yfinance
+Pillow>=10.0.0
+requests>=2.31.0
+
