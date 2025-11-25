@@ -1,5 +1,6 @@
 import express from "express";
 import { auth } from "../middlewares/auth.js";
+import { uploadFS } from "../middlewares/upload.js";
 
 import {
   createRecord,
@@ -14,8 +15,14 @@ import { validateFinancialRecord } from "../validators/insightValidation.js";
 
 const router = express.Router();
 
-// CREATE
-router.post("/", auth, validateFinancialRecord, createRecord);
+// CREATE (single route)
+router.post(
+  "/",
+  auth,
+  uploadFS.single("proofUpload"),
+  validateFinancialRecord,
+  createRecord
+);
 
 // GET ALL
 router.get("/", auth, getRecords);
@@ -24,7 +31,13 @@ router.get("/", auth, getRecords);
 router.get("/type/:type", auth, getRecordsByType);
 
 // UPDATE
-router.put("/:id", auth, validateFinancialRecord, updateRecord);
+router.put(
+  "/:id",
+  auth,
+  uploadFS.single("proofUpload"),      // allow replacing old file
+  validateFinancialRecord,
+  updateRecord
+);
 
 // DELETE
 router.delete("/:id", auth, deleteRecord);

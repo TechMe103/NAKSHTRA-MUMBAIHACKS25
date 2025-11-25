@@ -1,5 +1,7 @@
 import { FinancialRecord } from "../models/insight.js";
 import { validationResult } from "express-validator";
+import fs from "fs";
+
 
 // CREATE RECORD (expense, loan, investment, insight)
 export const createRecord = async (req, res) => {
@@ -8,9 +10,16 @@ export const createRecord = async (req, res) => {
     if (!errors.isEmpty())
       return res.status(400).json({ errors: errors.array() });
 
+    const data = { ...req.body };
+
+    // Save file path if uploaded
+    if (req.file) {
+      data.proofUpload = req.file.path;  // stores /uploads/file.png
+    }
+
     const record = await FinancialRecord.create({
       userId: req.user._id,
-      ...req.body,
+      ...data,
     });
 
     res.status(201).json({ success: true, record });
@@ -55,37 +64,74 @@ export const updateRecord = async (req, res) => {
     if (!errors.isEmpty())
       return res.status(400).json({ errors: errors.array() });
 
-    const record = await FinancialRecord.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
-      req.body,
-      { new: true }
-    );
-
-    if (!record)
-      return res.status(404).json({ error: "Record not found" });
-
-    res.json({ success: true, record });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-// DELETE
-export const deleteRecord = async (req, res) => {
-  try {
-    const deleted = await FinancialRecord.findOneAndDelete({
+    // Fetch existing record
+    const record = await FinancialRecord.findOne({
       _id: req.params.id,
       userId: req.user._id,
     });
 
-    if (!deleted)
+    if (!record)
       return res.status(404).json({ error: "Record not found" });
 
-    res.json({ success: true, message: "Record deleted" });
+    // If a new file uploaded → delete old file
+    if (req.file) {
+      if (record.proofUpload && fs.existsSync(record.proofUpload)) {
+        fs.unlinkSync(record.proofUpload);
+      }
+      req.body.proofUpload = req.file.path;
+    }
+
+    const updated = await FinancialRecord.findByIdAndUpdate(
+      record._id,
+      req.body,
+      { new: true }
+    );
+
+    res.json({ success: true, record: updated });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
+
+// DELETE
+// export const deleteRecord = async (req, res) => {
+//   try {
+//     const deleted = await FinancialRecord.findOneAndDelete({
+//       _id: req.params.id,
+//       userId: req.user._id,
+//     });
+
+//     if (!deleted)
+//       return res.status(404).json({ error: "Record not found" });
+
+//     res.json({ success: true, message: "Record deleted" });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+export const deleteRecord = async (req, res) => {
+  try {
+    const record = await FinancialRecord.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.user._id,
+    });
+
+    if (!record)
+      return res.status(404).json({ error: "Record not found" });
+
+    // Delete file from FS
+    if (record.proofUpload && fs.existsSync(record.proofUpload)) {
+      fs.unlinkSync(record.proofUpload);
+    }
+
+    res.json({ success: true, message: "Record + file deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 
 // MARK INSIGHT READ
 export const markInsightRead = async (req, res) => {
