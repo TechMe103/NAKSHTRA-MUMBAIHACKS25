@@ -1,5 +1,6 @@
 import { validationResult } from "express-validator";
-import { Budget } from "../models/budgetModel.js";
+import { Budget } from "../models/budgets.js";
+import { Transaction } from "../models/transactions.js";
 
 // Create a Budget
 export const createBudget = async (req, res) => {
@@ -24,17 +25,39 @@ export const createBudget = async (req, res) => {
   }
 };
 
-// Get all budgets for logged-in user
+ // Get ALL budgets + spent calculations
 export const getBudgets = async (req, res) => {
   try {
     const budgets = await Budget.find({ userId: req.user.id });
-    res.json({ budgets });
+
+    const finalResponse = [];
+
+    for (const budget of budgets) {
+      const transactions = await Transaction.find({
+        userId: req.user.id,
+        category: budget.category,
+        date: { $gte: budget.startDate, $lte: budget.endDate },
+      });
+
+      const spent = transactions.reduce((sum, tx) => sum + tx.amount, 0);
+      const left = budget.limit - spent;
+      const percentUsed = Number(((spent / budget.limit) * 100).toFixed(2));
+
+      finalResponse.push({
+        ...budget.toObject(),
+        spent,
+        left,
+        percentUsed,
+      });
+    }
+
+    res.json({ budgets: finalResponse });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
   }
 };
 
-// Get single budget by ID
+// Get Single Budget + spent calculation
 export const getBudgetById = async (req, res) => {
   try {
     const budget = await Budget.findOne({
@@ -46,13 +69,30 @@ export const getBudgetById = async (req, res) => {
       return res.status(404).json({ message: "Budget not found" });
     }
 
-    res.json({ budget });
+    const transactions = await Transaction.find({
+      userId: req.user.id,
+      category: budget.category,
+      date: { $gte: budget.startDate, $lte: budget.endDate },
+    });
+
+    const spent = transactions.reduce((sum, tx) => sum + tx.amount, 0);
+    const left = budget.limit - spent;
+    const percentUsed = Number(((spent / budget.limit) * 100).toFixed(2));
+
+    res.json({
+      budget: {
+        ...budget.toObject(),
+        spent,
+        left,
+        percentUsed,
+      },
+    });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
   }
 };
 
-// Update budget
+// Update Budget
 export const updateBudget = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
