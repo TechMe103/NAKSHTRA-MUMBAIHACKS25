@@ -1,5 +1,5 @@
 import express from "express";
-import { auth } from "../middlewares/auth.js";
+import { protectRoute } from "../middlewares/authMiddleware.js";
 import { uploadFS } from "../middlewares/upload.js";
 
 import {
@@ -18,31 +18,31 @@ const router = express.Router();
 // CREATE (single route)
 router.post(
   "/",
-  auth,
+  protectRoute,
   uploadFS.single("proofUpload"),
   validateFinancialRecord,
   createRecord
 );
 
 // GET ALL
-router.get("/", auth, getRecords);
+router.get("/", protectRoute, getRecords);
 
 // GET BY TYPE
-router.get("/type/:type", auth, getRecordsByType);
+router.get("/type/:type", protectRoute, getRecordsByType);
 
 // UPDATE
 router.put(
   "/:id",
-  auth,
+  protectRoute,
   uploadFS.single("proofUpload"),      // allow replacing old file
   validateFinancialRecord,
   updateRecord
 );
 
 // DELETE
-router.delete("/:id", auth, deleteRecord);
+router.delete("/:id", protectRoute, deleteRecord);
 
 // MARK INSIGHT AS READ
-router.patch("/:id/read", auth, markInsightRead);
+router.patch("/:id/read", protectRoute, markInsightRead);
 
 export default router;
