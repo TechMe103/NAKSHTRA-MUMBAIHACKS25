@@ -1,20 +1,32 @@
 import express from "express";
 import { protectRoute } from "../middlewares/authMiddleware.js";
+
 import {
   addTransaction,
-  getTransactions,
+  getAllTransactions,
   getTransaction,
   updateTransaction,
   deleteTransaction,
-} from "../controllers/transactionsController.js";
-import { transactionValidation } from "../validators/transactionsValidator.js";
+} from "../controllers/transactionController.js";
+
+import {
+  createTransactionValidation,
+  updateTransactionValidation
+} from "../validators/transactionValidation.js";
 
 const router = express.Router();
 
-router.post("/", protectRoute, transactionValidation, addTransaction);
-router.get("/", protectRoute, getTransactions);
+// Create
+router.post("/", protectRoute, createTransactionValidation, addTransaction);
+
+// Read
+router.get("/", protectRoute, getAllTransactions);
 router.get("/:id", protectRoute, getTransaction);
-router.put("/:id", protectRoute, updateTransaction);
+
+// Update
+router.put("/:id", protectRoute, updateTransactionValidation, updateTransaction);
+
+// Delete
 router.delete("/:id", protectRoute, deleteTransaction);
 
 export default router;

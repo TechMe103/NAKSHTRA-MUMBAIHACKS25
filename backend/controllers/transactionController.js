@@ -1,4 +1,4 @@
-import { Transaction } from "../models/Transaction.js";
+import { Transaction } from "../models/transactions.js";
 import { validationResult } from "express-validator";
 
 // ADD TRANSACTION  
@@ -21,17 +21,19 @@ export const addTransaction = async (req, res) => {
       description,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "Transaction added",
       transaction,
     });
+
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    return res.status(500).json({ message: "Server error", error });
   }
 };
 
+
 // GET ALL TRANSACTIONS  
-export const getTransactions = async (req, res) => {
+export const getAllTransactions = async (req, res) => {
   try {
     const { search, type, category, date_from, date_to } = req.query;
 
@@ -68,25 +70,25 @@ export const getTransactions = async (req, res) => {
 
     const balance = income - expenses;
 
-    res.json({
+    return res.json({
       count: transactions.length,
       income,
       expenses,
       balance,
       transactions,
     });
+
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    return res.status(500).json({ message: "Server error", error });
   }
 };
+
 
 // GET SINGLE TRANSACTION  
 export const getTransaction = async (req, res) => {
   try {
-    const id = req.params.id;
-
     const transaction = await Transaction.findOne({
-      _id: id,
+      _id: req.params.id,
       userId: req.user.id,
     });
 
@@ -94,40 +96,54 @@ export const getTransaction = async (req, res) => {
       return res.status(404).json({ message: "Transaction not found" });
     }
 
-    res.json(transaction);
+    return res.json(transaction);
+
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    return res.status(500).json({ message: "Server error", error });
   }
 };
+
 
 // UPDATE TRANSACTION  
 export const updateTransaction = async (req, res) => {
   try {
-    const id = req.params.id;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const allowedUpdates = ["title", "amount", "type", "category", "date", "description"];
+
+    const updates = {};
+    Object.keys(req.body).forEach((key) => {
+      if (allowedUpdates.includes(key)) {
+        updates[key] = req.body[key];
+      }
+    });
 
     const transaction = await Transaction.findOneAndUpdate(
-      { _id: id, userId: req.user.id },
-      req.body,
-      { new: true }
+      { _id: req.params.id, userId: req.user.id },
+      updates,
+      { new: true, runValidators: true }
     );
 
     if (!transaction) {
       return res.status(404).json({ message: "Transaction not found" });
     }
 
-    res.json({ message: "Updated", transaction });
+    return res.json({ message: "Updated", transaction });
+
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    return res.status(500).json({ message: "Server error", error });
   }
 };
+
 
 // DELETE TRANSACTION  
 export const deleteTransaction = async (req, res) => {
   try {
-    const id = req.params.id;
-
     const transaction = await Transaction.findOneAndDelete({
-      _id: id,
+      _id: req.params.id,
       userId: req.user.id,
     });
 
@@ -135,8 +151,9 @@ export const deleteTransaction = async (req, res) => {
       return res.status(404).json({ message: "Transaction not found" });
     }
 
-    res.json({ message: "Deleted successfully" });
+    return res.json({ message: "Deleted successfully" });
+
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    return res.status(500).json({ message: "Server error", error });
   }
 };
