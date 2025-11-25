@@ -5,6 +5,7 @@ import { connectDB } from "./config/db.js";
 import authRoutes from "./routes/authRoute.js";
 import transactionRoutes from "./routes/transactionRoute.js";
 import budgetRoutes from "./routes/budgetRoute.js";
+import insightRoutes from "./routes/insightRoute.js";
 
 dotenv.config();
 connectDB();
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/budgets", budgetRoutes);
+app.use("/api/insights", insightRoutes);
 
 app.get("/", (req, res) => {
   res.send("Backend running successfully!");

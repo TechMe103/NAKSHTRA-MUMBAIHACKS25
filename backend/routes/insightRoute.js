@@ -2,19 +2,34 @@ import express from "express";
 import { auth } from "../middlewares/auth.js";
 
 import {
-  createInsight,
-  getInsights,
+  createRecord,
+  getRecords,
+  getRecordsByType,
+  updateRecord,
+  deleteRecord,
   markInsightRead,
-  deleteInsight,
-} from "../controllers/insights.controller.js";
+} from "../controllers/insightController.js";
 
-import { createInsightValidator } from "../validators/insights.validator.js";
+import { validateFinancialRecord } from "../validators/insightValidation.js";
 
 const router = express.Router();
 
-router.post("/", auth, createInsightValidator, createInsight);
-router.get("/", auth, getInsights);
+// CREATE
+router.post("/", auth, validateFinancialRecord, createRecord);
+
+// GET ALL
+router.get("/", auth, getRecords);
+
+// GET BY TYPE
+router.get("/type/:type", auth, getRecordsByType);
+
+// UPDATE
+router.put("/:id", auth, validateFinancialRecord, updateRecord);
+
+// DELETE
+router.delete("/:id", auth, deleteRecord);
+
+// MARK INSIGHT AS READ
 router.patch("/:id/read", auth, markInsightRead);
-router.delete("/:id", auth, deleteInsight);
 
 export default router;
