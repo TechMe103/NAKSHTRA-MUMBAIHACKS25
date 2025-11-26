@@ -3,12 +3,21 @@ import { protectRoute } from "../middlewares/authMiddleware.js";
 import { uploadFS } from "../middlewares/upload.js";
 
 import {
+<<<<<<< Updated upstream
   createRecord,
   getRecords,
   getRecordsByType,
   updateRecord,
   deleteRecord,
   markInsightRead
+=======
+  createRecord,
+  getRecords,
+  getRecordsByType,
+  updateRecord,
+  deleteRecord,
+  markInsightRead, 
+>>>>>>> Stashed changes
 } from "../controllers/insightController.js";
 
 import { validateFinancialRecord } from "../validators/insightValidation.js";
