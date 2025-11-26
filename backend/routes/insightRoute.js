@@ -1,36 +1,26 @@
 import express from "express";
-import { auth } from "../middlewares/auth.js";
-
+import { protectRoute } from "../middlewares/authMiddleware.js";
+import { uploadFS } from "../middlewares/upload.js";
 import {
-  createRecord,
-  getRecords,
-  getRecordsByType,
-  updateRecord,
-  deleteRecord,
-  markInsightRead,
-} from "../controllers/insightController.js";
-
-import { validateFinancialRecord } from "../validators/insightValidation.js";
-
+  createRecord,
 const router = express.Router();
-
-// CREATE
-router.post("/", auth, validateFinancialRecord, createRecord);
-
-// GET ALL
-router.get("/", auth, getRecords);
-
-// GET BY TYPE
-router.get("/type/:type", auth, getRecordsByType);
-
-// UPDATE
-router.put("/:id", auth, validateFinancialRecord, updateRecord);
-
-// DELETE
-router.delete("/:id", auth, deleteRecord);
-
-// MARK INSIGHT AS READ
-router.patch("/:id/read", auth, markInsightRead);
-
+// CREATE (single route)
+router.post(
+  "/",
+  protectRoute,
+  uploadFS.single("proofUpload"),
+  validateFinancialRecord,
+  createRecord
+);
+router.get("/", protectRoute, getRecords);
+router.get("/type/:type", protectRoute, getRecordsByType);
+router.put(
+  "/:id",
+  protectRoute,
+  uploadFS.single("proofUpload"),      // allow replacing old file
+  validateFinancialRecord,
+  updateRecord
+);
+router.delete("/:id", protectRoute, deleteRecord);
+router.patch("/:id/read", protectRoute, markInsightRead);
 export default router;
-//insightRoute.js
