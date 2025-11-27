@@ -88,8 +88,8 @@ export default function VapiVoiceSystemPage() {
         <div className="relative flex flex-col items-center justify-center min-h-screen bg-black text-white font-sans overflow-hidden">
             
             {/* Animated Background Grid */}
-            <div className="absolute inset-0 opacity-20">
-                <div className="absolute inset-0" style={{
+            <div className="absolute inset-0 opacity-20 w-100% h-100%">
+                <div className="absolute inset-0 w-full" style={{
                     backgroundImage: `
                         linear-gradient(rgba(99, 102, 241, 0.1) 1px, transparent 1px),
                         linear-gradient(90deg, rgba(99, 102, 241, 0.1) 1px, transparent 1px)
