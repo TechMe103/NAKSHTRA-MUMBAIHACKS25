@@ -9,6 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.4.0",
+    "@types/three": "^0.181.0",
     "@vapi-ai/web": "^2.5.1",
     "i18next": "^25.6.3",
     "lucide-react": "^0.555.0",
@@ -19,10 +22,15 @@
     "react-i18next": "^16.3.5",
     "react-markdown": "^10.1.0",
     "recharts": "^3.5.0",
+<<<<<<< HEAD
     "socket.io-client": "^4.8.1"
+=======
+    "three": "^0.181.2"
+>>>>>>> 8ca3eba516ce680afca5d49bad1abe6eb9b5da62
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/node": "24.10.1",
     "eslint": "^9",
     "eslint-config-next": "16.0.4",
     "tailwindcss": "^4"
