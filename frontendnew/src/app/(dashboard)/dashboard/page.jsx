@@ -5,17 +5,17 @@ import { aiService } from '@/lib/aiService';
 import ReactMarkdown from 'react-markdown'; 
 import { 
   Mic, MessageSquare, FileText, Mail, Heart, MessageCircle, 
-  Plus, Loader2, UploadCloud 
+  Plus, BarChart3, PieChart, Loader2, UploadCloud 
 } from 'lucide-react';
-import { 
+import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, Area, AreaChart
+  PieChart as RechartsPieChart, Pie, Cell, LineChart, Line, Area, AreaChart
 } from 'recharts';
 
 // Link Component Helper
 const LinkComponent = ({ href, children, ...props }) => <a href={href} {...props}>{children}</a>; 
 
-// --- DUMMY DATA FOR CHARTS ---
+// --- DUMMY DATA FOR CHARTS (Visuals only) ---
 const incomeData = [
   { name: 'Jan', Income: 4000, Expense: 2400 },
   { name: 'Feb', Income: 3000, Expense: 1398 },
@@ -43,10 +43,7 @@ const trendData = [
   { day: '30', spend: 180 },
 ];
 
-
 // --- SUB-COMPONENTS ---
-
-// 1. Chart Container Wrapper
 function ChartCard({ title, children }) {
   return (
     <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 flex flex-col h-[300px]">
@@ -58,7 +55,6 @@ function ChartCard({ title, children }) {
   );
 }
 
-// 2. Bottom Dock Item
 function DockItem({ href, icon: Icon, label }) {
   return (
     <LinkComponent 
@@ -83,8 +79,18 @@ export default function DashboardPage() {
 
   const fileInputRef = useRef(null);
 
+  // --- 1. NEW LOGIC: CHECK HISTORY ON LOAD ---
   useEffect(() => {
-    setTimeout(() => setLoading(false), 500);
+    // Check if user has ANY uploaded reports in storage
+    const savedReports = JSON.parse(localStorage.getItem('finadapt_reports') || '[]');
+    
+    if (savedReports.length > 0) {
+      setHasData(true); // Unlock Dashboard immediately
+      // Set the CFO report to the MOST RECENT upload (first item)
+      setCfoReport(savedReports[0].content); 
+    }
+    
+    setLoading(false);
   }, []);
 
   const handleUploadClick = () => fileInputRef.current?.click();
@@ -94,36 +100,42 @@ export default function DashboardPage() {
     if (!file) return;
 
     setAnalyzing(true);
+    
     try {
-        // A. Simulate Cleaning Data
-        const dummyRawText = "UPI/2384/DOMINOS -450.00 | SALARY CRED +85000 | NETFLIX -649";
-        await aiService.cleanData(dummyRawText);
+        // --- REAL AI INTEGRATION ---
+        const result = await aiService.processDocument(file);
         
-        // B. Simulate Getting Insights
-        const dummyTransactions = [
-            { merchant: "Dominos Pizza", amount: -450, category: "Food" },
-            { merchant: "Employer", amount: 85000, category: "Salary" },
-            { merchant: "Netflix", amount: -649, category: "Entertainment" },
-            { merchant: "Uber", amount: -250, category: "Travel" }
-        ];
-        
-        const insightResult = await aiService.getInsights(dummyTransactions);
-        
-        if (insightResult.success) {
-          let reportText = insightResult.report;
+        if (result.success) {
+          let reportText = result.report;
           if (typeof reportText === 'object' && reportText.summary_markdown) {
              reportText = reportText.summary_markdown;
           } else if (typeof reportText === 'object') {
              reportText = JSON.stringify(reportText, null, 2);
           }
+
+          // Update UI
           setCfoReport(reportText); 
           setHasData(true); 
+
+          // Save to History (So it persists on reload)
+          const newDoc = {
+            id: Date.now(),
+            filename: file.name,
+            date: new Date().toLocaleDateString(),
+            type: "Bank Statement",
+            content: reportText
+          };
+
+          const existingDocs = JSON.parse(localStorage.getItem('finadapt_reports') || '[]');
+          localStorage.setItem('finadapt_reports', JSON.stringify([newDoc, ...existingDocs]));
+
         } else {
-          alert("AI Service is offline. Please run the Python backend.");
+          alert("AI Error: " + (result.error || "Unknown error"));
         }
+
     } catch (e) {
         console.error(e);
-        alert("Error connecting to AI.");
+        alert("Error connecting to AI. Make sure Python app.py is running!");
     } finally {
         setAnalyzing(false);
     }
@@ -140,9 +152,9 @@ export default function DashboardPage() {
   return (
     <div className="space-y-12 relative z-10 animate-in fade-in duration-500 pb-32" suppressHydrationWarning>
       
-      <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".pdf,.png,.jpg,.jpeg"/>
+      <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".pdf,.png,.jpg,.jpeg,.txt"/>
 
-      {/* --- 1. UPLOAD AREA --- */}
+      {/* --- 1. UPLOAD AREA (Changes text if data exists) --- */}
       <div 
         className="w-full max-w-xl mx-auto mt-8"
         onMouseEnter={() => setUploadHover(true)}
@@ -161,7 +173,7 @@ export default function DashboardPage() {
             <div className="flex flex-col items-center text-indigo-400">
                <Loader2 size={48} className="animate-spin mb-4" />
                <p>AI Agents are analyzing your finances...</p>
-               <span className="text-xs text-slate-500 mt-2">Cleaning Data • Categorizing • Generating Report</span>
+               <span className="text-xs text-slate-500 mt-2">Reading PDF • Saving to Vector DB • Generating Insights</span>
             </div>
           ) : (
             <>
@@ -170,16 +182,18 @@ export default function DashboardPage() {
               </div>
               <div className="text-center">
                  <h2 className={`text-xl font-semibold transition-colors ${uploadHover ? 'text-white' : 'text-slate-300'}`}>
-                   {hasData ? "UPLOAD MORE DOCUMENTS" : "UPLOAD TRANSACTIONS / RECEIPTS"}
+                   {hasData ? "UPLOAD NEW DOCUMENT" : "UPLOAD TRANSACTIONS / RECEIPTS"}
                  </h2>
-                 <p className="text-slate-500 mt-1">PDF, PNG, JPG supported</p>
+                 <p className="text-slate-500 mt-1">
+                    {hasData ? "Add more data to refine your financial profile" : "PDF, PNG, JPG supported"}
+                 </p>
               </div>
             </>
           )}
         </button>
       </div>
 
-      {/* --- 2. ANALYSIS SECTION --- */}
+      {/* --- 2. ANALYSIS SECTION (Visible if hasData is true) --- */}
       {hasData && (
         <div className="animate-in slide-in-from-bottom-8 fade-in duration-700">
            
@@ -188,7 +202,7 @@ export default function DashboardPage() {
              <div className="bg-slate-900/80 border border-slate-700 rounded-2xl p-6 mb-8 max-w-4xl mx-auto shadow-2xl">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-2xl">🧠</span>
-                  <h3 className="text-xl font-bold text-indigo-400">AI CFO Insights</h3>
+                  <h3 className="text-xl font-bold text-indigo-400">Latest AI Insights</h3>
                 </div>
                 <div className="prose prose-invert max-w-none text-sm text-slate-300">
                   <ReactMarkdown>{cfoReport}</ReactMarkdown>
@@ -201,20 +215,15 @@ export default function DashboardPage() {
              <div className="h-[1px] flex-1 bg-slate-800"></div>
            </div>
            
-           {/* --- CHARTS GRID --- */}
+           {/* CHARTS GRID */}
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-             
-             {/* CHART 1: INCOME VS EXPENSE */}
              <ChartCard title="Income vs Expense">
                <ResponsiveContainer width="100%" height="100%">
                  <BarChart data={incomeData}>
                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                    <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
                    <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                   <Tooltip 
-                     contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#f8fafc' }}
-                     itemStyle={{ color: '#f8fafc' }}
-                   />
+                   <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#f8fafc' }} itemStyle={{ color: '#f8fafc' }} />
                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
                    <Bar dataKey="Income" fill="#6366f1" radius={[4, 4, 0, 0]} />
                    <Bar dataKey="Expense" fill="#ec4899" radius={[4, 4, 0, 0]} />
@@ -222,19 +231,10 @@ export default function DashboardPage() {
                </ResponsiveContainer>
              </ChartCard>
 
-             {/* CHART 2: CATEGORY BREAKDOWN */}
              <ChartCard title="Category Breakdown">
                <ResponsiveContainer width="100%" height="100%">
                  <PieChart>
-                   <Pie
-                     data={categoryData}
-                     cx="50%"
-                     cy="50%"
-                     innerRadius={60}
-                     outerRadius={80}
-                     paddingAngle={5}
-                     dataKey="value"
-                   >
+                   <Pie data={categoryData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
                      {categoryData.map((entry, index) => (
                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(0,0,0,0)" />
                      ))}
@@ -245,7 +245,6 @@ export default function DashboardPage() {
                </ResponsiveContainer>
              </ChartCard>
 
-             {/* CHART 3: SPENDING TRENDS */}
              <ChartCard title="Spending Trends">
                <ResponsiveContainer width="100%" height="100%">
                  <AreaChart data={trendData}>
@@ -262,12 +261,11 @@ export default function DashboardPage() {
                  </AreaChart>
                </ResponsiveContainer>
              </ChartCard>
-
            </div>
         </div>
       )}
 
-      {/* --- 3. DOCK --- */}
+      {/* --- 3. DOCK (Visible if hasData is true) --- */}
       {hasData && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 animate-in slide-in-from-bottom-12 fade-in duration-700 delay-200 w-full px-4 flex justify-center pointer-events-none">
           <div className="bg-white border border-gray-300 shadow-2xl shadow-gray-800/20 rounded-2xl px-3 sm:px-6 py-3 flex items-center gap-2 sm:gap-4 md:gap-6 pointer-events-auto overflow-x-auto max-w-full no-scrollbar">
