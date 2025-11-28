@@ -47,6 +47,9 @@ export default function Navbar() {
         <Link href="/pricing" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">
           Pricing
         </Link>
+        <Link href="/advisior" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">
+          Advisor 
+        </Link>
       </div>
 
       {/* 3. Profile & Logout */}
