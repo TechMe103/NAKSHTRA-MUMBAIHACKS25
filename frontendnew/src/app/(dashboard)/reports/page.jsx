@@ -1,114 +1,212 @@
-"use client";
-import { useState, useEffect } from "react";
-import ReactMarkdown from "react-markdown";
-import { FileText, Download, Trash2, Calendar, FileBarChart } from "lucide-react";
+'use client';
+
+import { useState, useEffect } from 'react';
+// Using generic <a> tag for compilation safety
+const Link = ({ href, children, ...props }) => <a href={href} {...props}>{children}</a>; 
+
+import { 
+  FileText, 
+  BarChart2, 
+  TrendingUp, 
+  PieChart, 
+  Scale, 
+  CheckCircle, 
+  XOctagon,
+  Loader2,
+  List,
+  Mail
+} from 'lucide-react';
+
+// Default transaction structure expected from backend
+const initialReportState = {
+  transactions: [],
+  income: 0,
+  expenses: 0,
+  balance: 0,
+  count: 0,
+};
+
+// Mock data for the report cards
+const reportTypes = [
+  { title: "Net Balance Overview", icon: Scale, description: "Current total balance (Income - Expenses)." },
+  { title: "Expense Category Breakdown", icon: PieChart, description: "Your spending split across food, housing, etc." },
+  { title: "Income vs. Expense Trend", icon: BarChart2, description: "Monthly comparison of earnings against spending." },
+  { title: "Budget Compliance Check", icon: CheckCircle, description: "Status of all active budget limits." },
+  { title: "High-Value Transaction List", icon: List, description: "Review of all transactions above a certain threshold." },
+  { title: "Saving Opportunities Insight", icon: TrendingUp, description: "AI-driven suggestions for potential savings." },
+];
 
 export default function ReportsPage() {
-  const [reports, setReports] = useState([]);
+  const [reportData, setReportData] = useState(initialReportState);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Load reports from Local Storage on mount
   useEffect(() => {
-    const saved = localStorage.getItem("finadapt_reports");
-    if (saved) {
-      setReports(JSON.parse(saved));
-    }
+    const fetchReports = async () => {
+      setLoading(true);
+      setError(null);
+      setReportData(initialReportState); // CRITICAL: Reset data before fetching
+
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) throw new Error("Authentication token missing. Please log in again.");
+
+        // Fetch transactions (which includes income/expense totals)
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/transactions`, {
+          headers: { 
+            // CRITICAL FIX: Ensure the Bearer token is always sent
+            'Authorization': `Bearer ${token}` 
+          }
+        });
+        
+        const data = await res.json();
+
+        if (!res.ok) {
+          // If the server sends a 401/403 (Unauthorized), it means the token is bad,
+          // and we should NOT proceed with any data, even if the payload has an empty list.
+          throw new Error(data.message || 'Access Denied. Token issue.');
+        }
+
+        // If data is successfully retrieved and authorized, set it.
+        setReportData(data);
+      } catch (err) {
+        // If fetch or authorization fails, show error and leave data as initialReportState (empty)
+        setError(err.message);
+        console.error("Report Fetch Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReports();
   }, []);
 
-  const handleDelete = (id) => {
-    const confirmDelete = window.confirm("Delete this report?");
-    if (confirmDelete) {
-        const updated = reports.filter((r) => r.id !== id);
-        setReports(updated);
-        localStorage.setItem("finadapt_reports", JSON.stringify(updated));
-    }
+  // Use the transactions array to check if a user has uploaded *any* data
+  const hasData = reportData.transactions && reportData.transactions.length > 0;
+
+  const handleSendEmail = () => {
+    alert("Functionality to package and email the report content would be implemented here!");
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8 mt-16 pb-32">
+    <div className="space-y-10 relative z-10 w-full">
       
-      {/* Header */}
-      <div className="flex justify-between items-end border-b border-slate-800 pb-6">
+      {/* --- HEADER WITH EMAIL BUTTON --- */}
+      <header className="mb-8 border-b border-slate-800/50 pb-4 flex items-center justify-between flex-wrap gap-4">
+        {/* Title Group */}
         <div>
-          <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
-            <FileBarChart className="text-indigo-500" size={36} />
-            Financial Reports
+          <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+            <FileText size={28} className="text-indigo-400" /> Financial Reports
           </h1>
-          <p className="text-slate-400">Generated automatically by Agent 2 from your uploads</p>
+          <p className="text-slate-400 mt-1 text-sm">Detailed analysis based on your recorded transactions.</p>
         </div>
-        <span className="bg-slate-800 border border-slate-700 text-indigo-400 px-4 py-1.5 rounded-full text-sm font-mono">
-          {reports.length} Document{reports.length !== 1 ? 's' : ''}
-        </span>
-      </div>
 
-      {/* Empty State */}
-      {reports.length === 0 ? (
-        <div className="text-center py-20 bg-slate-900/30 rounded-3xl border border-slate-800 border-dashed animate-in fade-in zoom-in duration-500">
-          <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
-             <FileText size={40} className="text-slate-600" />
-          </div>
-          <h3 className="text-2xl font-semibold text-slate-300">No Reports Yet</h3>
-          <p className="text-slate-500 mt-2 max-w-md mx-auto">
-            Your AI-generated analysis history will appear here. Go to the dashboard and upload a bank statement to get started.
-          </p>
-          <a href="/dashboard" className="inline-block mt-8 bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-medium transition-colors">
-            Go to Dashboard &rarr;
-          </a>
-        </div>
-      ) : (
-        /* Report List */
-        <div className="grid gap-8">
-          {reports.map((report) => (
-            <div key={report.id} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl transition-all hover:border-indigo-500/30 hover:shadow-2xl hover:shadow-indigo-500/10 animate-in slide-in-from-bottom-4">
-              
-              {/* Card Header */}
-              <div className="bg-slate-950/50 p-5 flex flex-wrap gap-4 justify-between items-center border-b border-slate-800">
-                <div className="flex items-center gap-4">
-                  <div className="bg-gradient-to-br from-indigo-500/20 to-purple-500/20 p-3 rounded-xl text-indigo-400 border border-indigo-500/20">
-                    <FileText size={24} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg text-white">{report.filename}</h3>
-                    <div className="flex items-center gap-3 text-xs text-slate-400 mt-1">
-                      <div className="flex items-center gap-1">
-                        <Calendar size={12} />
-                        <span>{report.date}</span>
-                      </div>
-                      <span>•</span>
-                      <span className="bg-slate-800 px-2 py-0.5 rounded text-slate-300">{report.type}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => handleDelete(report.id)} 
-                    className="p-2.5 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors" 
-                    title="Delete Report"
-                  >
-                    <Trash2 size={20} />
-                  </button>
-                  <button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-500/20">
-                    <Download size={18} />
-                    Download PDF
-                  </button>
-                </div>
-              </div>
+        {/* Action Button (Top Right) */}
+        {hasData && (
+          <button
+            onClick={handleSendEmail}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-colors text-sm shadow-lg shadow-indigo-500/20"
+          >
+            <Mail size={18} /> Send Report
+          </button>
+        )}
+      </header>
+      {/* -------------------------------------- */}
 
-              {/* Card Content (Markdown) */}
-              <div className="p-6 prose prose-invert prose-sm max-w-none text-slate-300">
-                <div className="max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                    <ReactMarkdown>{report.content}</ReactMarkdown>
-                </div>
-              </div>
-              
-              {/* Card Footer */}
-              <div className="bg-slate-950/30 px-6 py-3 text-xs text-center text-slate-600 border-t border-slate-800">
-                 Generated by Agent 4: Insights • Stored in Vector DB
-              </div>
-            </div>
-          ))}
+      {loading && (
+        <div className="flex justify-center py-20 text-slate-500">
+          <Loader2 className="animate-spin mr-3"/> Generating reports...
         </div>
       )}
+
+      {error && (
+        <div className="bg-red-900/30 border border-red-800 text-red-300 p-4 rounded-xl flex items-center gap-3">
+          <XOctagon size={20} />
+          <p>Error: {error}</p>
+        </div>
+      )}
+
+      {!loading && !error && !hasData && (
+        // SHOWS IF USER HAS NO DATA
+        <div className="text-center py-20 bg-slate-900/50 border border-slate-800 rounded-2xl">
+          <h2 className="text-xl font-semibold text-slate-400">No Data to Generate Reports</h2>
+          <p className="text-slate-500 mt-2">Please upload your first transaction or receipt to unlock this feature.</p>
+          <Link href="/dashboard" className="mt-4 inline-flex items-center text-indigo-400 hover:text-indigo-300 underline">
+            Go to Dashboard to Upload
+          </Link>
+        </div>
+      )}
+
+      {!loading && hasData && (
+        // SHOWS IF USER HAS DATA
+        <section className="space-y-8">
+          
+          {/* Summary Section (Dynamic Data) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <SummaryCard 
+              title="Total Income" 
+              value={`₹ ${reportData.income.toFixed(2)}`} 
+              color="text-green-400"
+            />
+            <SummaryCard 
+              title="Total Expenses" 
+              value={`₹ ${reportData.expenses.toFixed(2)}`} 
+              color="text-red-400"
+            />
+            <SummaryCard 
+              title="Current Balance" 
+              value={`₹ ${reportData.balance.toFixed(2)}`} 
+              color={reportData.balance >= 0 ? "text-indigo-400" : "text-red-400"}
+            />
+          </div>
+
+          {/* Reports List (Static Reports, Dynamic Data Descriptions) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {reportTypes.map((report, index) => (
+              <ReportItem 
+                key={index}
+                title={report.title}
+                description={report.description}
+                icon={report.icon}
+                dynamicData={
+                  report.title === "Net Balance Overview" 
+                    ? `Balance is ₹ ${reportData.balance.toFixed(2)}.` 
+                    : report.title === "Income vs. Expense Trend" 
+                    ? `Income is ${((reportData.income / (reportData.income + reportData.expenses)) * 100).toFixed(1)}% of total flow.`
+                    : "Data analysis needed."
+                }
+              />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+// Helper component for quick data summary
+function SummaryCard({ title, value, color }) {
+  return (
+    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 shadow-lg">
+      <p className="text-sm text-slate-500">{title}</p>
+      <h2 className={`text-2xl font-bold mt-1 ${color}`}>{value}</h2>
+    </div>
+  );
+}
+
+// Helper component for individual report items
+function ReportItem({ title, description, icon: Icon, dynamicData }) {
+  return (
+    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 space-y-3 transition-all duration-300 hover:border-indigo-500/50 cursor-pointer">
+      <div className="flex items-center gap-3">
+        <Icon size={24} className="text-indigo-400" />
+        <h3 className="text-lg font-semibold text-white">{title}</h3>
+      </div>
+      <p className="text-slate-500 text-sm">{description}</p>
+      <div className="border-t border-slate-800 pt-3">
+        <p className="text-xs text-indigo-300">Quick Insight:</p>
+        <p className="text-sm text-white mt-1">{dynamicData}</p>
+      </div>
     </div>
   );
 }
