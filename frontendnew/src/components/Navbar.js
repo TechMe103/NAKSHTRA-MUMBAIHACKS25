@@ -34,7 +34,9 @@ export default function Navbar() {
           <Zap className="w-4 h-4 text-white fill-white" />
         </div>
         <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+          <Link to="/">
           FinAdapt
+          </Link>
         </span>
       </Link>
 
@@ -43,10 +45,10 @@ export default function Navbar() {
         <Link href="/dashboard" className="text-sm font-medium text-white hover:text-indigo-400 transition-colors">
           Home
         </Link>
-        <Link href="#" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">
+        <Link href="/about" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">
           About
         </Link>
-        <Link href="#" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">
+        <Link href="/pricing" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">
           Pricing
         </Link>
       </div>
@@ -54,13 +56,18 @@ export default function Navbar() {
       {/* 3. Profile & Logout */}
       <div className="flex items-center gap-4">
         {/* Profile Circle */}
-        <div className="w-9 h-9 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 p-[1px]">
+        <a href="/accounts">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 p-[1px]">
           <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center" title={user?.fullName}>
             <span className="font-bold text-xs text-indigo-400 cursor-pointer">
-              {user?.fullName?.charAt(0) || 'U'}
+              {
+              user?.fullName?.charAt(0) || 'U'
+              }
             </span>
           </div>
         </div>
+        </a>
+        
         
 
         {/* Logout Button */}
