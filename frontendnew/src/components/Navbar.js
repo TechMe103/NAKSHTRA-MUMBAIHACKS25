@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link'; // ✅ Use standard Next.js Link
 import { useRouter } from 'next/navigation';
-import { Zap, LogOut } from 'lucide-react';
+import { Zap, LogOut, TreeDeciduous } from 'lucide-react';
 
 export default function Navbar() {
   const router = useRouter();
@@ -48,7 +48,11 @@ export default function Navbar() {
           Pricing
         </Link>
         <Link href="/advisior" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">
-          Advisor 
+          Advisor
+        </Link>
+        <Link href="/Tree" className="flex items-center gap-1 text-sm font-medium text-slate-400 hover:text-white transition-colors">
+          <TreeDeciduous className="w-4 h-4" />
+          Tree
         </Link>
       </div>
 
